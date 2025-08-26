@@ -11,8 +11,8 @@
     <SoundChannels>1</SoundChannels>
     <MixingChannels>64</MixingChannels>
     <ChunkSize>2048</ChunkSize>
-    <SoundVolume>10</SoundVolume>
-    <MusicVolume>1</MusicVolume>
+    <SoundVolume>80</SoundVolume>
+    <MusicVolume>70</MusicVolume>
     <SoundOn>true</SoundOn>
     <MusicOn>true</MusicOn>
     <MusicRpcServerPath>MidiProc.exe</MusicRpcServerPath>

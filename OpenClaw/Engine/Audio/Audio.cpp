@@ -200,11 +200,20 @@ static int SetupPlayMusicThread(void* pData)
 
 void Audio::PlayMusic(const char* musicData, size_t musicSize, bool looping)
 {
+#ifdef __EMSCRIPTEN__
+    // Use Web Audio API for Emscripten builds
+    if (musicData && musicSize > 0) {
+        // Load and play music using Web Audio API
+        WebAudio_LoadMusic(musicData, musicSize);
+        WebAudio_PlayMusic("", looping);
+    }
+#else
     _MusicInfo* pMusicInfo = new _MusicInfo(musicData, musicSize, looping, m_bMusicOn ? m_MusicVolume : -1);
 
     // Playing music track takes ALOT of time for some reason so play it in another thread
     SDL_Thread* pThread = SDL_CreateThread(SetupPlayMusicThread, "SetupPlayMusicThread", (void*)pMusicInfo);
     SDL_DetachThread(pThread);
+#endif
 }
 
 void Audio::PauseMusic()
@@ -320,7 +329,7 @@ bool Audio::PlaySound(Mix_Chunk* sound, const SoundProperties& soundProperties)
     
     // Use the sound data directly with Web Audio API
     if (sound && sound->abuf) {
-        return WebAudio_PlaySound("wav_sound", volume);
+        return WebAudio_PlaySound("", volume);
     }
     
     return false;

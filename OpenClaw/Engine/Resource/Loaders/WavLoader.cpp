@@ -26,13 +26,21 @@ WavResourceExtraData::~WavResourceExtraData()
 void WavResourceExtraData::LoadWavSound(char* rawBuffer, uint32 size)
 {
 #ifdef __EMSCRIPTEN__
-    // For Emscripten, use Web Audio API
-    if (WebAudio_LoadSound("wav_sound", rawBuffer, size))
+    // For Emscripten, use Web Audio API with a unique name
+    static int soundCounter = 0;
+    std::string soundName = "wav_sound_" + std::to_string(soundCounter++);
+    
+    if (WebAudio_LoadSound(soundName.c_str(), rawBuffer, size))
     {
         _sound = shared_ptr<Mix_Chunk>(new Mix_Chunk(), DeleteMixChunk);
         _sound->abuf = (Uint8*)rawBuffer;
         _sound->alen = size;
         _sound->allocated = 0; // Don't let SDL free our buffer
+        
+        // Store the sound name in the chunk for later reference
+        // We'll use the volume field to store a pointer to the name
+        // This is a hack, but it works for our purposes
+        _soundName = soundName;
     }
     else
     {

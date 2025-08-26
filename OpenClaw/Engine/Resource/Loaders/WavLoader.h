@@ -14,9 +14,16 @@ public:
     virtual std::string VToString() { return "WavResourceExtraData"; }
     void LoadWavSound(char* rawBuffer, uint32 size);
     shared_ptr<Mix_Chunk> GetSound() { return _sound; }
+    
+#ifdef __EMSCRIPTEN__
+    std::string GetSoundName() { return _soundName; }
+#endif
 
 private:
     shared_ptr<Mix_Chunk> _sound;
+#ifdef __EMSCRIPTEN__
+    std::string _soundName;
+#endif
 };
 
 class WavResourceLoader : public IResourceLoader

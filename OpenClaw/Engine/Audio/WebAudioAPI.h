@@ -8,6 +8,7 @@
 extern "C" {
     bool WebAudio_Initialize();
     bool WebAudio_LoadSound(const char* name, const char* data, size_t size);
+    bool WebAudio_LoadMusic(const char* data, size_t size);
     bool WebAudio_PlaySound(const char* name, float volume);
     bool WebAudio_PlayMusic(const char* name, bool looping);
     void WebAudio_StopMusic();
