@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.5)
 
 # Build options
 option(Android "Android" OFF)
 
 option(Emscripten "Build as WASM" OFF)
 option(Extern_Config "Do not embed config file" ON)
-set(EMSCRIPTEN_PATH "CHANGE ME PLEASE!!!/emsdk")
+set(EMSCRIPTEN_PATH "${CMAKE_SOURCE_DIR}/emsdk")
 
 project(OpenClaw)
 
