@@ -140,7 +140,7 @@ void LocalAmbientSoundComponent::UpdateAmbientSound()
     double distance = soundDistanceDelta.Length();
     double distanceRatio = distance / m_DiagonalLength;
 
-    int sdlDistance = std::min(distanceRatio * 255, (double)255);
+    int sdlDistance = min(distanceRatio * 255, (double)255);
 
     Mix_SetDistance(m_SoundChannel, sdlDistance);
 

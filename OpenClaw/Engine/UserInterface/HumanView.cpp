@@ -586,7 +586,7 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
                 Point soundDistanceDelta = m_pCamera->GetCenterPosition() - soundSourcePos;
                 float length = soundDistanceDelta.Length();
                 float distanceRatio = length / (m_pCamera->GetWidth() / 2);
-                int sdlDistance = std::min(distanceRatio * 255, (float)255);
+                int sdlDistance = min(distanceRatio * 255, (float)255);
                 LOG("SDL DISTANCE: " + ToStr(sdlDistance));*/
             }
 
@@ -604,7 +604,7 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
 
                         float distanceRatio = length / ((m_pCamera->GetWidth() / 2) * (1.0f + paddingRatio));
                         //float distanceRatio = length / pSoundInfo->maxHearDistance;
-                        int sdlDistance = std::min(distanceRatio * 150, (float)150);
+                        int sdlDistance = min(distanceRatio * 150, (float)150);
                         /*LOG("SDL DISTANCE: " + ToStr(sdlDistance));
                         LOG("Length: " + ToStr(length));*/
                         soundProperties.distance = sdlDistance;

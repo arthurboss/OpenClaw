@@ -30,14 +30,15 @@ cd build
 echo "2. Configuring CMake for Emscripten..."
 emcmake cmake -DEmscripten=1 ..
 
-echo "3. Patching SDL2 shaders for WebGL compatibility..."
+echo "3. Building the project (first attempt to download SDL2)..."
+make
+
+echo "4. Patching SDL2 shaders for WebGL compatibility..."
 cd ..
 ./patch_sdl2_shaders.sh
 
-echo "4. Clearing SDL2 build cache..."
+echo "5. Clearing SDL2 build cache and rebuilding..."
 rm -rf ./emsdk/upstream/emscripten/cache/build/sdl2
-
-echo "5. Building the project..."
 cd build
 make
 

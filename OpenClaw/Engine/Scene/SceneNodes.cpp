@@ -251,8 +251,8 @@ bool GridNode::VAddChild(shared_ptr<ISceneNode> kid) {
 SDL_Point GridNode::WorldToGridPosition(int x, int y) const {
     // Max column/row count prevents infinite memory growing if an actor falls out of bound
     return SDL_Point{
-            std::min(max(x, 0) / m_CellWidth, m_MaxColumnCount),
-            std::min(max(y, 0) / m_CellHeight, m_MaxRowCount)
+            min(max(x, 0) / m_CellWidth, m_MaxColumnCount),
+            min(max(y, 0) / m_CellHeight, m_MaxRowCount)
     };
 }
 
