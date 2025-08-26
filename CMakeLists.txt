@@ -38,7 +38,12 @@ include_directories(./libwap/)
 include_directories(./ThirdParty/)
 include_directories(./ThirdParty/Tinyxml/)
 if (Emscripten)
-    include_directories("${EMSCRIPTEN_PATH}/upstream/emscripten/system/include/emscripten/")
+    include_directories("${EMSCRIPTEN_PATH}/upstream/emscripten/cache/sysroot/include/emscripten/")
+    add_definitions(-DSDL_VIDEO_OPENGL_ES2=1)
+    add_definitions(-DSDL_VIDEO_OPENGL_ES=1)
+    add_definitions(-DSDL_VIDEO_OPENGL=1)
+    add_definitions(-DSDL_VIDEO_OPENGL_ES2_DISABLE_EXTERNAL_TEXTURE=1)
+    add_definitions(-DSDL_VIDEO_OPENGL_ES2_DISABLE_ANDROID_TEXTURE=1)
 endif (Emscripten)
 
 # Directories with libs
@@ -74,7 +79,7 @@ if (Emscripten)
     else (Extern_Config)
         set(CONFIG_PRELOAD_FILE "--preload-file ../Build_Release/config.xml@config.xml")
     endif (Extern_Config)
-    set_target_properties(openclaw PROPERTIES LINK_FLAGS "-s FETCH -s WASM=1 -s BINARYEN_METHOD='native-wasm' -s EXPORTED_FUNCTIONS='[_main]' -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS='[\"pcx\",\"png\",\"tga\"]' -s USE_SDL_TTF=2 -s USE_SDL_GFX=2 -s ASYNCIFY=1 -s TOTAL_MEMORY=268435456 ${CONFIG_PRELOAD_FILE} --preload-file ../Build_Release/CLAW.REZ@CLAW.REZ --preload-file ../Build_Release/ASSETS.ZIP@ASSETS.ZIP --preload-file ../Build_Release/console02.tga@console02.tga --preload-file ../Build_Release/clacon.ttf@clacon.ttf")
+    set_target_properties(openclaw PROPERTIES LINK_FLAGS "-s FETCH -s WASM=1 -s BINARYEN_METHOD='native-wasm' -s EXPORTED_FUNCTIONS='[_main]' -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS='[\"pcx\",\"png\",\"tga\"]' -s USE_SDL_TTF=2 -s USE_SDL_GFX=2 -s USE_SDL_MIXER=2 -s ASYNCIFY=1 -s TOTAL_MEMORY=268435456 -s FULL_ES3=1 -s USE_WEBGL2=1 -s MIN_WEBGL_VERSION=1 -s MAX_WEBGL_VERSION=2 ${CONFIG_PRELOAD_FILE} --preload-file ../Build_Release/CLAW.REZ@CLAW.REZ --preload-file ../Build_Release/ASSETS.ZIP@ASSETS.ZIP --preload-file ../Build_Release/console02.tga@console02.tga --preload-file ../Build_Release/clacon.ttf@clacon.ttf")
 else (Emscripten)
     list(APPEND TARGET_LIBS
             SDL2
