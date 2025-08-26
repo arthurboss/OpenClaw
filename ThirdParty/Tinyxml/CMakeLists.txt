@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.5)
 
 project(tinyxml VERSION 2.6.2 LANGUAGES CXX)
 
