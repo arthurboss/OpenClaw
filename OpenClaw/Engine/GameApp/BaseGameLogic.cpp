@@ -124,7 +124,28 @@ std::string BaseGameLogic::GetActorXml(uint32 actorId)
 
 bool BaseGameLogic::VEnterMenu(const char* xmlMenuResource)
 {
-    TiXmlElement* pXmlLevelRoot = XmlResourceLoader::LoadAndReturnRootXmlElement(xmlMenuResource);
+    TiXmlElement* pXmlLevelRoot = nullptr;
+    
+#ifdef __EMSCRIPTEN__
+    // For WASM builds, try to load from individual files first for better lazy loading
+    std::string localFilePath = "/Build_Release/" + std::string(xmlMenuResource);
+    pXmlLevelRoot = XmlResourceLoader::LoadAndReturnRootXmlElement(localFilePath.c_str(), true);
+    if (pXmlLevelRoot != NULL)
+    {
+        LOG("Loaded menu from individual file: " + localFilePath);
+    }
+    else
+    {
+        LOG("Individual file not found, falling back to resource cache: " + localFilePath);
+    }
+#endif
+
+    // Fallback to resource cache if individual file loading failed or not WASM
+    if (pXmlLevelRoot == NULL)
+    {
+        pXmlLevelRoot = XmlResourceLoader::LoadAndReturnRootXmlElement(xmlMenuResource);
+    }
+    
     if (pXmlLevelRoot == NULL)
     {
         LOG_ERROR("Could not load menu resource file: " + std::string(xmlMenuResource));

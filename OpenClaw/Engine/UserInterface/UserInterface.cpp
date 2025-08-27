@@ -979,16 +979,20 @@ ScreenElementMenuItem::~ScreenElementMenuItem()
 
 void ScreenElementMenuItem::VOnUpdate(uint32 msDiff)
 {
-    // This is a bit hacky but implementing this via XML would be pain in the ass right now...
+    // Visual feedback for volume sliders - move the knob based on current volume
+    // This is necessary because the XML system doesn't handle slider positioning automatically
     if (m_Name == "SOUND_KNOB")
     {
         int soundVolume = g_pApp->GetAudio()->GetSoundVolume();
-        m_Position.SetX(m_DefaultPosition.x + (soundVolume / 10) * 20);
+        // Move the knob horizontally based on volume (0-100% -> 0-200 pixels)
+        m_Position.SetX(m_DefaultPosition.x + (soundVolume * 2));
     }
     else if (m_Name == "MUSIC_KNOB")
     {
         int musicVolume = g_pApp->GetAudio()->GetMusicVolume();
-        m_Position.SetX(m_DefaultPosition.x + (musicVolume / 2) * 20);
+        // Move the knob horizontally based on volume (0-100% -> 0-200 pixels)
+        // Now both sliders use DeltaVolume: 10, so they have the same step size
+        m_Position.SetX(m_DefaultPosition.x + (musicVolume * 2));
     }
 }
 

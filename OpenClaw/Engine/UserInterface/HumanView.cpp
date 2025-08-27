@@ -638,7 +638,7 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
                 assert(pSound != nullptr);
                 if (pSound && pSound->abuf) {
                     float volume = (static_cast<float>(soundProperties.volume) / 100.0f);
-                    g_pApp->GetAudio()->GetAudioSystem()->PlaySoundWithPath(pSoundInfo->soundToPlay, (const char*)pSound->abuf, pSound->alen, volume);
+                    g_pApp->GetAudio()->GetAudioSystem()->PlaySoundWithPath(pSoundInfo->soundToPlay, (const char*)pSound->abuf, pSound->alen, volume, soundProperties.loops);
                 }
 #else
                 // For native builds, use the original method
@@ -784,10 +784,23 @@ void HumanView::SetVolumeDelegate(IEventDataPtr pEventData)
             if (pCastEventData->GetIsDelta())
             {
                 int currentVolume = g_pApp->GetAudio()->GetMusicVolume();
-                g_pApp->GetAudio()->SetMusicVolume(currentVolume + pCastEventData->GetVolume());
+                int deltaVolume = pCastEventData->GetVolume();
+                int newVolume = currentVolume + deltaVolume;
+                
+                LOG("MUSIC VOLUME DEBUG: current=" + ToStr(currentVolume) + 
+                    ", delta=" + ToStr(deltaVolume) + 
+                    ", new=" + ToStr(newVolume));
+                
+                // Clamp to 0-100 range
+                newVolume = max(0, min(100, newVolume));
+                
+                LOG("MUSIC VOLUME DEBUG: after clamp=" + ToStr(newVolume));
+                
+                g_pApp->GetAudio()->SetMusicVolume(newVolume);
             }
             else
             {
+                LOG("MUSIC VOLUME DEBUG: absolute value=" + ToStr(pCastEventData->GetVolume()));
                 g_pApp->GetAudio()->SetMusicVolume(pCastEventData->GetVolume());
             }
         }
@@ -796,10 +809,23 @@ void HumanView::SetVolumeDelegate(IEventDataPtr pEventData)
             if (pCastEventData->GetIsDelta())
             {
                 int currentVolume = g_pApp->GetAudio()->GetSoundVolume();
-                g_pApp->GetAudio()->SetSoundVolume(currentVolume + pCastEventData->GetVolume());
+                int deltaVolume = pCastEventData->GetVolume();
+                int newVolume = currentVolume + deltaVolume;
+                
+                LOG("SOUND VOLUME DEBUG: current=" + ToStr(currentVolume) + 
+                    ", delta=" + ToStr(deltaVolume) + 
+                    ", new=" + ToStr(newVolume));
+                
+                // Clamp to 0-100 range
+                newVolume = max(0, min(100, newVolume));
+                
+                LOG("SOUND VOLUME DEBUG: after clamp=" + ToStr(newVolume));
+                
+                g_pApp->GetAudio()->SetSoundVolume(newVolume);
             }
             else
             {
+                LOG("SOUND VOLUME DEBUG: absolute value=" + ToStr(pCastEventData->GetVolume()));
                 g_pApp->GetAudio()->SetSoundVolume(pCastEventData->GetVolume());
             }
         }

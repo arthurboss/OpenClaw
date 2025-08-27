@@ -39,7 +39,7 @@ public:
     // Sound effects
     bool LoadSound(const std::string& name, const char* data, size_t size) override;
     bool PlaySound(const std::string& name, float volume = 1.0f) override;
-    bool PlaySoundWithPath(const std::string& originalPath, const char* data, size_t size, float volume = 1.0f) override;
+    bool PlaySoundWithPath(const std::string& originalPath, const char* data, size_t size, float volume = 1.0f, int loops = 0) override;
     void StopSound(const std::string& name) override;
     void StopAllSounds() override;
     
@@ -58,10 +58,7 @@ public:
     
     // Enable/disable
     void SetSoundEnabled(bool enabled) override { m_soundEnabled = enabled; }
-    void SetMusicEnabled(bool enabled) override { 
-        m_musicEnabled = enabled; 
-        if (!enabled) StopMusic();
-    }
+    void SetMusicEnabled(bool enabled) override;
     bool IsSoundEnabled() const override { return m_soundEnabled; }
     bool IsMusicEnabled() const override { return m_musicEnabled; }
     

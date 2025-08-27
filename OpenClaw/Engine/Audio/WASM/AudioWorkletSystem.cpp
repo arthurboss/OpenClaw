@@ -98,6 +98,8 @@ bool AudioWorkletSystem::LoadSound(const std::string& name, const char* data, si
                 wavFileName = 'sounds/menu/SELECT.WAV';
             } else if (name.includes('CLICK.WAV') || name.includes('CHANGE_MENU_ITEM')) {
                 wavFileName = 'sounds/menu/CLICK.WAV';
+            } else if (name.includes('MENUBED.WAV') || name.includes('MENUMUSIC')) {
+                wavFileName = 'sounds/menu/MENUBED.WAV';
 
             }
             
@@ -299,6 +301,15 @@ void AudioWorkletSystem::StopMusic() {
 
 #ifdef __EMSCRIPTEN__
     EM_ASM({
+        // Stop the currently playing music source
+        if (window.musicSource) {
+            window.musicSource.stop();
+            window.musicSource = null;
+        }
+        if (window.musicGainNode) {
+            window.musicGainNode = null;
+        }
+        
         if (window.audioWorkletNode) {
             window.audioWorkletNode.port.postMessage({
                 type: 'stopMusic'
@@ -346,7 +357,7 @@ void AudioWorkletSystem::ResumeMusic() {
     std::cout << "Music resumed" << std::endl;
 }
 
-bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, const char* data, size_t size, float volume) {
+bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, const char* data, size_t size, float volume, int loops) {
     if (!m_initialized || !m_soundEnabled || !data || size == 0) {
         return false;
     }
@@ -357,10 +368,11 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
     std::cout << "Loading WAV file for: " << originalPath << std::endl;
     
 #ifdef __EMSCRIPTEN__
-    return EM_ASM_INT({
-        try {
-            const originalPath = UTF8ToString($0);
-            const volume = $1;
+                    return EM_ASM_INT({
+                    try {
+                        const originalPath = UTF8ToString($0);
+                        const volume = $1;
+                        const loops = $2;
             console.log('Loading WAV file for:', originalPath);
             
             // Map original paths to our organized structure
@@ -370,7 +382,8 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                 wavFileName = 'sounds/menu/SELECT.WAV';
             } else if (originalPath.includes('CLICK.WAV') || originalPath.includes('CHANGE_MENU_ITEM')) {
                 wavFileName = 'sounds/menu/CLICK.WAV';
-
+            } else if (originalPath.includes('MENUBED.WAV') || originalPath.includes('MENUMUSIC')) {
+                wavFileName = 'sounds/menu/MENUBED.WAV';
             }
             
             // Use fetch to load the WAV file
@@ -397,8 +410,32 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                     const gainNode = audioContext.createGain();
                     
                     source.buffer = audioBuffer;
-                    source.loop = false;
-                    gainNode.gain.value = volume * window.soundVolume;
+                    source.loop = (loops === -1); // -1 means infinite loop
+                    
+                    // Use music volume for MENUBED.WAV, sound volume for everything else
+                    let volumeMultiplier = window.soundVolume;
+                    let isMusic = false;
+                    if (originalPath.includes('MENUBED.WAV') || originalPath.includes('MENUMUSIC')) {
+                        volumeMultiplier = window.musicVolume;
+                        isMusic = true;
+                    }
+                    
+                    // Apply volume based on enabled state
+                    let finalVolume = volume * volumeMultiplier;
+                    if (isMusic && !window.musicEnabled) {
+                        finalVolume = 0; // Mute if music is disabled
+                    }
+                    
+                    // Clamp volume to 0.0-1.0 range
+                    finalVolume = Math.max(0.0, Math.min(1.0, finalVolume));
+                    gainNode.gain.value = finalVolume;
+                    
+                    // Store the gain node and source for volume updates if it's music
+                    if (isMusic) {
+                        window.musicGainNode = gainNode;
+                        window.musicSource = source;
+                        window.musicVolume = volumeMultiplier;
+                    }
                     
                     source.connect(gainNode);
                     gainNode.connect(audioContext.destination);
@@ -423,7 +460,7 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
             console.error('Error loading sound:', e);
             return false;
         }
-    }, originalPath.c_str(), volume * m_soundVolume);
+                    }, originalPath.c_str(), volume * m_soundVolume, loops);
 #endif
     
     return true;
@@ -445,12 +482,48 @@ void AudioWorkletSystem::SetSoundVolume(float volume) {
 #endif
 }
 
+void AudioWorkletSystem::SetMusicEnabled(bool enabled) {
+    m_musicEnabled = enabled;
+    
+#ifdef __EMSCRIPTEN__
+    EM_ASM({
+        window.musicEnabled = $0;
+        
+        if (!window.musicEnabled) {
+            // Mute music if disabled (but don't stop it)
+            if (window.musicGainNode) {
+                window.musicGainNode.gain.value = 0;
+            }
+        } else {
+            // Resume music volume if enabled and we have a gain node
+            if (window.musicGainNode) {
+                window.musicGainNode.gain.value = window.musicVolume;
+            }
+        }
+        
+        if (window.audioWorkletNode) {
+            window.audioWorkletNode.port.postMessage({
+                type: 'setMusicEnabled',
+                enabled: $0
+            });
+        }
+    }, enabled);
+#endif
+}
+
 void AudioWorkletSystem::SetMusicVolume(float volume) {
-    m_musicVolume = std::max(0.0f, std::min(1.0f, volume));
+    // Volume is already clamped to 0.0-1.0 range by Audio::SetMusicVolume
+    m_musicVolume = volume;
     
 #ifdef __EMSCRIPTEN__
     EM_ASM({
         window.musicVolume = $0;
+        
+        // Update currently playing music gain if it exists and music is enabled
+        if (window.musicGainNode && window.musicEnabled) {
+            window.musicGainNode.gain.value = $0;
+        }
+        
         if (window.audioWorkletNode) {
             window.audioWorkletNode.port.postMessage({
                 type: 'setMusicVolume',
@@ -477,6 +550,8 @@ bool AudioWorkletSystem::InitializeAudioWorklet() {
             // Initialize global volume variables
             window.soundVolume = 1.0;
             window.musicVolume = 1.0;
+            window.musicEnabled = true;
+            window.soundEnabled = true;
             
             // Resume audio context on user interaction
             const resumeAudio = () => {

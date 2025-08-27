@@ -15,7 +15,7 @@ public:
     // Sound effects
     virtual bool LoadSound(const std::string& name, const char* data, size_t size) = 0;
     virtual bool PlaySound(const std::string& name, float volume = 1.0f) = 0;
-    virtual bool PlaySoundWithPath(const std::string& originalPath, const char* data, size_t size, float volume = 1.0f) = 0;
+    virtual bool PlaySoundWithPath(const std::string& originalPath, const char* data, size_t size, float volume = 1.0f, int loops = 0) = 0;
     virtual void StopSound(const std::string& name) = 0;
     virtual void StopAllSounds() = 0;
     
