@@ -1115,8 +1115,8 @@ namespace ActorTemplates
             //position.Set(presetPosition.x, presetPosition.y);
             //size.Set(presetPosition.w - presetPosition.x, presetPosition.h - presetPosition.y);
 
-            size.x = std::min((int)size.x, presetPosition.w - presetPosition.x);
-            size.y = std::min((int)size.y, presetPosition.h - presetPosition.y);
+            size.x = min((int)size.x, presetPosition.w - presetPosition.x);
+            size.y = min((int)size.y, presetPosition.h - presetPosition.y);
         }
 
         return CreateXmlData_SoundTriggerActor(sound, position, size, enterCount, activateDialog);

@@ -70,6 +70,10 @@ typedef int8_t int8;
 #define PROFILE_MEMORY(tag) MEMORY_PROFILER _MEMORY_PROFILER_(tag);
 #endif
 
+#ifndef min
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
 #ifndef max
 #define max(a, b) ((a) < (b) ? (b) : (a))
 #endif

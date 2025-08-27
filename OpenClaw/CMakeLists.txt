@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.5)
 
 target_compile_definitions(openclaw PRIVATE SDL_MAIN_HANDLED)
 
