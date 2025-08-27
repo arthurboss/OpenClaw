@@ -1,7 +1,8 @@
 # Audio File Structure
 
 ## Overview
-This directory contains the organized audio assets for the OpenClaw project. The audio system supports multiple platforms including WebAssembly (WASM), native builds, and other target platforms.
+This directory contains the organized audio assets for the OpenClaw project.
+The files are originally in CLAW.REZ, but they have been extracted from it and added individually to the project mainly for WebAssembly to benefit from loading the game in chunks (lazy loading on the browser), which enables much faster game startup and loading.
 
 ## Directory Structure
 ```
