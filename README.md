@@ -76,7 +76,7 @@ Zip all content inside `Build_Release/ASSETS` directory to `ASSETS.ZIP` file.
   
   The project can be compiled as wasm code. This code is executed by modern web browsers without any additional runtime dependencies. Compiled once this code can work on any devices with different operation systems.
   
-  **Compilation:**
+  **Prerequisites:**
   - Install [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) from official website. I'm not sure that compilation will be successful on a Windows platform. If you use Windows then don't show off, enable Windows Subsystem for Linux (WSL), download Linux-like system (for example, Ubuntu) from Windows Store and install Emscripten SDK. It should be something like:
     ```shell script
     git clone https://github.com/emscripten-core/emsdk.git
@@ -89,14 +89,29 @@ Zip all content inside `Build_Release/ASSETS` directory to `ASSETS.ZIP` file.
     ```
   - Make sure you have *python* and *cmake* packages. Ubuntu: `sudo apt install python cmake`.
   - Make sure you have fresh `ASSETS.ZIP` and `CLAW.REZ` files in `Build_Release` directory.
-  - Compile:
-    ```shell script
+  
+  **Quick Build (Recommended):**
+  ```shell script
+    source ./emsdk/emsdk_env.sh
+    ./build_wasm.sh
+  ```
+  
+  **Manual Build:**
+  ```shell script
     mkdir build
     cd build
     emcmake cmake -DEmscripten=1 ..
-    # -DExtern_Config=0 parameter includes config.xml file in game resources
+    cd ..
+    ./patch_sdl2_shaders.sh  # Fixes WebGL shader compatibility issues
+    cd build
     make
-    ```
+  ```
+  
+  **Running the game:**
+  ```shell script
+    python3 -m http.server 8080
+    # Open http://localhost:8080/Build_Release/openclaw.html in your browser
+  ```
   
   **Run:**
   
