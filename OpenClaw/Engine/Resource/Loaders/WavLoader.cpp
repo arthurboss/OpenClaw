@@ -25,28 +25,13 @@ WavResourceExtraData::~WavResourceExtraData()
 
 void WavResourceExtraData::LoadWavSound(char* rawBuffer, uint32 size)
 {
-#ifdef __EMSCRIPTEN__
-    // For Emscripten, use Web Audio API
-    if (WebAudio_LoadSound("wav_sound", rawBuffer, size))
-    {
-        _sound = shared_ptr<Mix_Chunk>(new Mix_Chunk(), DeleteMixChunk);
-        _sound->abuf = (Uint8*)rawBuffer;
-        _sound->alen = size;
-        _sound->allocated = 0; // Don't let SDL free our buffer
-    }
-    else
-    {
-        LOG_ERROR("Failed to load WAV sound");
-    }
-#else
-    SDL_RWops* soundRwOps = SDL_RWFromMem((void*)rawBuffer, size);
-    _sound = shared_ptr<Mix_Chunk>(Mix_LoadWAV_RW(soundRwOps, 1), DeleteMixChunk);
-    if (_sound == NULL)
-    {
-        LOG_ERROR("Failed to load WAV sound");
-    }
-    //LOG("RawBufferSize = " + ToStr(size) + ", Sound size = " + ToStr(_sound->alen));
-#endif
+    // Create a dummy Mix_Chunk for compatibility
+    _sound = shared_ptr<Mix_Chunk>(new Mix_Chunk(), DeleteMixChunk);
+    _sound->abuf = (Uint8*)rawBuffer;
+    _sound->alen = size;
+    _sound->allocated = 0; // Don't let SDL free our buffer
+    
+    // The actual audio loading will be handled by the Audio class when PlaySound is called
 }
 
 //=================================================================================================

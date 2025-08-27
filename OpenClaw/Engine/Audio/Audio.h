@@ -3,8 +3,10 @@
 
 #include <stdint.h>
 #include <SDL2/SDL_mixer.h>
+#include <memory>
 
 #include "../GameApp/BaseGameApp.h"
+#include "IAudioSystem.h"
 
 class Audio
 {
@@ -38,6 +40,9 @@ public:
 
     int GetSoundVolume();
     int GetMusicVolume();
+    
+    // Audio system access
+    IAudioSystem* GetAudioSystem() { return m_audioSystem.get(); }
 
 private:
     //##### Methods #####//
@@ -58,6 +63,9 @@ private:
     int m_MusicVolume;
     bool m_bSoundOn;
     bool m_bMusicOn;
+    
+    // Modular audio system
+    std::unique_ptr<IAudioSystem> m_audioSystem;
 };
 
 #endif

@@ -5,12 +5,9 @@
 #include "Audio.h"
 #include "../Events/EventMgr.h"
 #include "../Events/Events.h"
+#include "AudioSystemFactory.h"
 
 #include <iostream>
-
-#ifdef __EMSCRIPTEN__
-#include "WebAudioAPI.h"
-#endif
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -51,11 +48,18 @@ Audio::~Audio()
 
 bool Audio::Initialize(const GameOptions& config)
 {
-#ifdef __EMSCRIPTEN__
-    // Use Web Audio API for Emscripten builds
-    if (!WebAudio_Initialize())
-    {
-        LOG_ERROR("Failed to initialize Web Audio API");
+    // Create the appropriate audio system for the current platform
+    auto audioSystemType = AudioSystemFactory::GetRecommendedAudioSystemType();
+    m_audioSystem = AudioSystemFactory::CreateAudioSystem(audioSystemType);
+    
+    if (!m_audioSystem) {
+        LOG_ERROR("Failed to create audio system");
+        return false;
+    }
+    
+    // Initialize the audio system
+    if (!m_audioSystem->Initialize()) {
+        LOG_ERROR("Failed to initialize audio system");
         return false;
     }
 
@@ -65,65 +69,17 @@ bool Audio::Initialize(const GameOptions& config)
     m_bSoundOn = config.soundOn;
     m_bMusicOn = config.musicOn;
 
-    // Convert 0-100 range to 0.0-1.0 for Web Audio API
+    // Convert 0-100 range to 0.0-1.0 for audio system
     float soundVol = static_cast<float>(m_SoundVolume) / 100.0f;
     float musicVol = static_cast<float>(m_MusicVolume) / 100.0f;
     
-    WebAudio_SetSoundVolume(soundVol);
-    WebAudio_SetMusicVolume(musicVol);
-    WebAudio_SetSoundEnabled(m_bSoundOn);
-    WebAudio_SetMusicEnabled(m_bMusicOn);
+    m_audioSystem->SetSoundVolume(soundVol);
+    m_audioSystem->SetMusicVolume(musicVol);
+    m_audioSystem->SetSoundEnabled(m_bSoundOn);
+    m_audioSystem->SetMusicEnabled(m_bMusicOn);
 
     m_bIsAudioInitialized = true;
     return true;
-#else
-    // Use SDL2_mixer for native builds
-    if (!SDL_WasInit(SDL_INIT_AUDIO))
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Attempted to initialize Audio subsystem before SDL2 was initialized");
-        return false;
-    }
-
-    // Setup audio mode
-    if (Mix_OpenAudio(config.frequency, MIX_DEFAULT_FORMAT, config.soundChannels, config.chunkSize) != 0)
-    {
-        LOG_ERROR(std::string(Mix_GetError()));
-        return false;
-    }
-
-    Mix_AllocateChannels(config.mixingChannels);
-
-    int reservedChannels = Mix_ReserveChannels(16);
-    if (reservedChannels != 16)
-    {
-        LOG_ERROR(std::string(Mix_GetError()));
-        return false;
-    }
-
-    Mix_GroupChannels(0, 15, 1);
-
-    m_SoundVolume = config.soundVolume;
-    m_MusicVolume = config.musicVolume;
-    m_bSoundOn = config.soundOn;
-    m_bMusicOn = config.musicOn;
-
-#ifdef _WIN32
-    m_bIsMidiRpcInitialized = InitializeMidiRPC(config.midiRpcServerPath);
-    if (!m_bIsMidiRpcInitialized)
-    {
-        return false;
-    }
-#endif //_WIN32
-
-    SetSoundVolume(m_SoundVolume);
-    SetMusicVolume(m_MusicVolume);
-
-    SetSoundActive(m_bSoundOn);
-    SetMusicActive(m_bMusicOn);
-
-    m_bIsAudioInitialized = true;
-    return true;
-#endif
 }
 
 void Audio::Terminate()
@@ -265,39 +221,16 @@ void Audio::SetMusicVolume(int volumePercentage)
     volumePercentage = max(0, min(100, volumePercentage));
     m_MusicVolume = volumePercentage;
 
-#ifdef __EMSCRIPTEN__
-    // Convert 0-100 range to 0.0-1.0 for Web Audio API
+    // Convert 0-100 range to 0.0-1.0 for audio system
     float volume = static_cast<float>(volumePercentage) / 100.0f;
-    WebAudio_SetMusicVolume(volume);
-#else
-    // For SDL2_mixer
-    // Music has ~ 5x more potency than sound, so max is 20 instead of 100
-    int adjustedVolume = min(volumePercentage, 20);
-    m_MusicVolume = (int)((adjustedVolume / 100.0f) * MIX_MAX_VOLUME);
-
-    #ifdef _WIN32
-        RpcTryExcept
-        {
-            MidiRPC_ChangeVolume(m_MusicVolume);
-        }
-        RpcExcept(1)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "AudioMgr::SetMusicVolume: Failed due to RPC exception");
-        }
-        RpcEndExcept
-    #else
-        Mix_VolumeMusic(m_MusicVolume);
-    #endif // _WIN32
-#endif // __EMSCRIPTEN__
+    if (m_audioSystem) {
+        m_audioSystem->SetMusicVolume(volume);
+    }
 }
 
 int Audio::GetMusicVolume()
 {
-#ifdef __EMSCRIPTEN__
-    return m_MusicVolume; // Already in 0-100 range for Emscripten
-#else
-    return ceil(((float)m_MusicVolume / (float)MIX_MAX_VOLUME) * 100.0f);
-#endif
+    return m_MusicVolume; // Already in 0-100 range
 }
 
 bool Audio::PlaySound(const char* soundData, size_t soundSize, const SoundProperties& soundProperties)
@@ -309,48 +242,21 @@ bool Audio::PlaySound(const char* soundData, size_t soundSize, const SoundProper
 }
 bool Audio::PlaySound(Mix_Chunk* sound, const SoundProperties& soundProperties)
 {
-#ifdef __EMSCRIPTEN__
-    // For Emscripten, use Web Audio API
-    if (!m_bSoundOn) {
+    if (!m_bSoundOn || !m_audioSystem) {
         return false;
     }
     
     // Calculate volume (0.0 to 1.0)
     float volume = (static_cast<float>(soundProperties.volume) / 100.0f) * (static_cast<float>(m_SoundVolume) / 100.0f);
     
-    // Use the sound data directly with Web Audio API
+    // Use the sound data directly with our audio system
     if (sound && sound->abuf) {
-        return WebAudio_PlaySound("wav_sound", volume);
+        // Load the sound data into our audio system
+        m_audioSystem->LoadSound("wav_sound", (const char*)sound->abuf, sound->alen);
+        return m_audioSystem->PlaySound("wav_sound", volume);
     }
     
     return false;
-#else
-    int chunkVolume = (int)((((float)soundProperties.volume) / 100.0f) * (float)m_SoundVolume);
-
-    Mix_VolumeChunk(sound, chunkVolume);
-
-    int loops = soundProperties.loops;
-    
-    int channel = Mix_PlayChannel(-1, sound, loops);
-    if (channel == -1)
-    {
-        LOG_ERROR("Failed to play chunk: " + std::string(Mix_GetError()));
-        return false;
-    }
-
-    if (!Mix_SetPosition(channel, soundProperties.angle, soundProperties.distance))
-    {
-        LOG_ERROR("Mix_SetPosition: " + std::string(Mix_GetError()));
-        return false;
-    }
-
-    if (!m_bSoundOn)
-    {
-        Mix_Pause(channel);
-    }
-
-    return true;
-#endif
 }
 
 void Audio::SetSoundVolume(int volumePercentage)
@@ -359,36 +265,23 @@ void Audio::SetSoundVolume(int volumePercentage)
     volumePercentage = max(0, min(100, volumePercentage));
     m_SoundVolume = volumePercentage;
 
-#ifdef __EMSCRIPTEN__
-    // Convert 0-100 range to 0.0-1.0 for Web Audio API
+    // Convert 0-100 range to 0.0-1.0 for audio system
     float volume = static_cast<float>(volumePercentage) / 100.0f;
-    WebAudio_SetSoundVolume(volume);
-#else
-    // For SDL2_mixer
-    m_SoundVolume = (int)((volumePercentage / 100.0f) * MIX_MAX_VOLUME);
-    if (m_bSoundOn)
-    {
-        Mix_Volume(-1, m_SoundVolume);
+    if (m_audioSystem) {
+        m_audioSystem->SetSoundVolume(volume);
     }
-#endif
 }
 
 int Audio::GetSoundVolume()
 {
-#ifdef __EMSCRIPTEN__
-    return m_SoundVolume; // Already in 0-100 range for Emscripten
-#else
-    return ceil(((float)m_SoundVolume / (float)MIX_MAX_VOLUME) * 100.0f);
-#endif
+    return m_SoundVolume; // Already in 0-100 range
 }
 
 void Audio::StopAllSounds()
 {
-#ifdef __EMSCRIPTEN__
-    WebAudio_StopAllSounds();
-#else
-    Mix_HaltChannel(-1);
-#endif
+    if (m_audioSystem) {
+        m_audioSystem->StopAllSounds();
+    }
     StopMusic();
 }
 
@@ -412,44 +305,24 @@ void Audio::SetSoundActive(bool active)
 {
     m_bSoundOn = active;
 
-#ifdef __EMSCRIPTEN__
-    WebAudio_SetSoundEnabled(m_bSoundOn);
-    if (!m_bSoundOn) {
-        WebAudio_StopAllSounds();
+    if (m_audioSystem) {
+        m_audioSystem->SetSoundEnabled(m_bSoundOn);
+        if (!m_bSoundOn) {
+            m_audioSystem->StopAllSounds();
+        }
     }
-#else
-    if (!m_bSoundOn)
-    {
-        // Stop all sound channels
-        Mix_HaltChannel(-1);
-    }
-    else
-    {
-        // Restore volume for all channels
-        Mix_Volume(-1, m_SoundVolume);
-    }
-#endif
 }
 
 void Audio::SetMusicActive(bool active)
 {
     m_bMusicOn = active;
 
-#ifdef __EMSCRIPTEN__
-    WebAudio_SetMusicEnabled(m_bMusicOn);
-    if (!m_bMusicOn) {
-        WebAudio_StopMusic();
+    if (m_audioSystem) {
+        m_audioSystem->SetMusicEnabled(m_bMusicOn);
+        if (!m_bMusicOn) {
+            m_audioSystem->StopMusic();
+        }
     }
-#else
-    if (!m_bMusicOn)
-    {
-        StopMusic();
-    }
-    else
-    {
-        SetMusicVolume(m_MusicVolume);
-    }
-#endif
 }
 
 #ifdef _WIN32
