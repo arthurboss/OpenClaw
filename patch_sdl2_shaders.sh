@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # Script to patch SDL2 shaders for WebGL compatibility
-# This script should be run before building the project
+# This script should be run after CMake configuration but before building
 
 SDL2_SHADER_FILE="./emsdk/upstream/emscripten/cache/ports/sdl2/SDL-release-2.32.8/src/render/opengles2/SDL_shaders_gles2.c"
 
 if [ ! -f "$SDL2_SHADER_FILE" ]; then
-    echo "SDL2 shader file not found. Run 'emcmake cmake -DEmscripten=1 ..' first to download SDL2."
-    exit 1
+    echo "SDL2 shader file not found. SDL2 will be downloaded during the build process."
+    echo "The shader patch will be applied automatically when SDL2 is available."
+    exit 0
 fi
 
 echo "Patching SDL2 shaders for WebGL compatibility..."

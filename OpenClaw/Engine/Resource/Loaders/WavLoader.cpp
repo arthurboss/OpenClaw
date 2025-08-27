@@ -2,6 +2,10 @@
 
 #include "../../GameApp/BaseGameApp.h"
 
+#ifdef __EMSCRIPTEN__
+#include "../../Audio/WebAudioAPI.h"
+#endif
+
 //=================================================================================================
 // class WavResourceExtraData
 //
@@ -21,6 +25,20 @@ WavResourceExtraData::~WavResourceExtraData()
 
 void WavResourceExtraData::LoadWavSound(char* rawBuffer, uint32 size)
 {
+#ifdef __EMSCRIPTEN__
+    // For Emscripten, use Web Audio API
+    if (WebAudio_LoadSound("wav_sound", rawBuffer, size))
+    {
+        _sound = shared_ptr<Mix_Chunk>(new Mix_Chunk(), DeleteMixChunk);
+        _sound->abuf = (Uint8*)rawBuffer;
+        _sound->alen = size;
+        _sound->allocated = 0; // Don't let SDL free our buffer
+    }
+    else
+    {
+        LOG_ERROR("Failed to load WAV sound");
+    }
+#else
     SDL_RWops* soundRwOps = SDL_RWFromMem((void*)rawBuffer, size);
     _sound = shared_ptr<Mix_Chunk>(Mix_LoadWAV_RW(soundRwOps, 1), DeleteMixChunk);
     if (_sound == NULL)
@@ -28,6 +46,7 @@ void WavResourceExtraData::LoadWavSound(char* rawBuffer, uint32 size)
         LOG_ERROR("Failed to load WAV sound");
     }
     //LOG("RawBufferSize = " + ToStr(size) + ", Sound size = " + ToStr(_sound->alen));
+#endif
 }
 
 //=================================================================================================
@@ -59,11 +78,16 @@ bool WavResourceLoader::VLoadResource(char* rawBuffer, uint32 rawSize, std::shar
 
 uint32 WavResourceLoader::VGetLoadedResourceSize(char* rawBuffer, uint32 rawSize)
 {
+#ifdef __EMSCRIPTEN__
+    // For Emscripten, just return the raw size since we don't need to decode
+    return rawSize;
+#else
     // TODO: This is inefficent, this resource gets basically loaded twice, once just
     // to find out how much room it takes and second time to actually create it
     SDL_RWops* soundRwOps = SDL_RWFromMem((void*)rawBuffer, rawSize);
     auto pSound = shared_ptr<Mix_Chunk>(Mix_LoadWAV_RW(soundRwOps, 1), DeleteMixChunk);
     return pSound->alen;
+#endif
 }
 
 shared_ptr<Mix_Chunk> WavResourceLoader::LoadAndReturnSound(const char* resourceString)
