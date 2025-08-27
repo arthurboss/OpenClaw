@@ -1,5 +1,7 @@
 # OpenClaw - Captain Claw (1997) reimplementation
 
+> This fork focuses on fixing, updating and modernising the WASM implementation of the original project
+
  - This project is a multiplatform C++ reimplementation of original Captain Claw (1997) platformer game
  - Whole codebase was written from scratch
  - Game uses assets from original game archive (CLAW.REZ)
