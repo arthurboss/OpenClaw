@@ -545,6 +545,7 @@ bool ScreenElementMenu::Initialize(TiXmlElement* pElem)
         // Play some music
         SoundInfo soundInfo(backgroundMusicPath);
         soundInfo.loops = -1;
+        soundInfo.isMusic = true;  // Mark as music so it uses PlayMusic() instead of PlaySound()
         IEventMgr::Get()->VTriggerEvent(IEventDataPtr(
             new EventData_Request_Play_Sound(soundInfo)));
     }
@@ -988,7 +989,16 @@ void ScreenElementMenuItem::VOnUpdate(uint32 msDiff)
     else if (m_Name == "MUSIC_KNOB")
     {
         int musicVolume = g_pApp->GetAudio()->GetMusicVolume();
-        m_Position.SetX(m_DefaultPosition.x + (musicVolume / 2) * 20);
+        // Fix: Use a more reasonable scale factor to keep cursor on screen
+        // Original: (musicVolume / 2) * 20 = up to 1000 pixels off-screen!
+        // New: (musicVolume / 10) * 20 = up to 200 pixels, much more reasonable
+        m_Position.SetX(m_DefaultPosition.x + (musicVolume / 10) * 20);
+        // Debug: Log the music volume and position
+        static int lastLoggedVolume = -1;
+        if (musicVolume != lastLoggedVolume) {
+            LOG("MUSIC_KNOB: volume=" + ToStr(musicVolume) + ", position.x=" + ToStr(m_Position.x));
+            lastLoggedVolume = musicVolume;
+        }
     }
 }
 

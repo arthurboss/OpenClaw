@@ -220,7 +220,7 @@ public:
                     window.currentMusicSource = null;
                 }
                 
-                // Check if this is a MIDI file (starts with "MThd")
+                // Check if this is a MIDI file (starts with "MThd") or WAV file (starts with "RIFF")
                 const header = new Uint8Array(window.lastLoadedMusicBuffer, 0, 4);
                 const headerStr = String.fromCharCode(...header);
                 
@@ -357,9 +357,14 @@ public:
                         }
                     }
                 } else {
-                    // Non-MIDI file - use standard Web Audio API
+                    // Non-MIDI file (raw audio data) - use standard Web Audio API
+                    console.log("Attempting to decode raw audio music, size:", window.lastLoadedMusicBuffer.byteLength);
+                    
+                    // Try to decode as raw audio data (from SDL's decoded audio)
                     window.audioContext.decodeAudioData(window.lastLoadedMusicBuffer.slice(0))
                         .then(buffer => {
+                            console.log("Raw audio decoded successfully, duration:", buffer.duration, "channels:", buffer.numberOfChannels);
+                            
                             const source = window.audioContext.createBufferSource();
                             const gainNode = window.audioContext.createGain();
                             
@@ -372,10 +377,10 @@ public:
                             
                             window.currentMusicSource = source;
                             source.start(0);
-                            console.log("Playing non-MIDI music, looping:", looping);
+                            console.log("Playing raw audio music, looping:", looping, "volume:", gainNode.gain.value);
                         })
                         .catch(error => {
-                            console.error("Error playing music:", error);
+                            console.error("Error decoding raw audio music:", error);
                         });
                 }
                     

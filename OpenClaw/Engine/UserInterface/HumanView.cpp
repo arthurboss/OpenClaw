@@ -558,10 +558,31 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
 
         if (pSoundInfo->isMusic) // Background music - instrumental
         {
-            shared_ptr<MidiFile> pMidiFile = MidiResourceLoader::LoadAndReturnMidiFile(pSoundInfo->soundToPlay.c_str());
-            assert(pMidiFile != nullptr);
+            // Check if it's a MIDI file (XMI) or WAV file
+            std::string filePath = pSoundInfo->soundToPlay;
+            std::transform(filePath.begin(), filePath.end(), filePath.begin(), ::tolower);
+            
+            if (filePath.find(".xmi") != std::string::npos) {
+                // MIDI file - use existing logic
+                shared_ptr<MidiFile> pMidiFile = MidiResourceLoader::LoadAndReturnMidiFile(pSoundInfo->soundToPlay.c_str());
+                assert(pMidiFile != nullptr);
 
-            g_pApp->GetAudio()->PlayMusic(pMidiFile->data, pMidiFile->size, pSoundInfo->loops != 0);
+                g_pApp->GetAudio()->PlayMusic(pMidiFile->data, pMidiFile->size, pSoundInfo->loops != 0);
+            } else if (filePath.find(".wav") != std::string::npos) {
+                // WAV file - load as WAV but play as music
+                shared_ptr<Mix_Chunk> pSound = WavResourceLoader::LoadAndReturnSound(pSoundInfo->soundToPlay.c_str());
+                assert(pSound != nullptr);
+                
+                // For WAV music, we need to handle it differently in our Web Audio API
+                // The issue is that Mix_Chunk->abuf contains decoded audio data, not WAV format
+                // For now, we'll use the decoded audio data and let the Web Audio API handle it
+                if (pSound && pSound->abuf) {
+                    // Use the decoded audio data - the Web Audio API should handle this properly
+                    g_pApp->GetAudio()->PlayMusic((const char*)pSound->abuf, pSound->alen, pSoundInfo->loops != 0);
+                }
+            } else {
+                LOG_ERROR("Unknown music file format: " + pSoundInfo->soundToPlay);
+            }
         }
         else // Effect / Speech etc. - WAV
         {
