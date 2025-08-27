@@ -632,9 +632,20 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
 
             if (play)
             {
+#ifdef __EMSCRIPTEN__
+                // For WASM, use the new method that accepts the original path
+                shared_ptr<Mix_Chunk> pSound = WavResourceLoader::LoadAndReturnSound(pSoundInfo->soundToPlay.c_str());
+                assert(pSound != nullptr);
+                if (pSound && pSound->abuf) {
+                    float volume = (static_cast<float>(soundProperties.volume) / 100.0f);
+                    g_pApp->GetAudio()->GetAudioSystem()->PlaySoundWithPath(pSoundInfo->soundToPlay, (const char*)pSound->abuf, pSound->alen, volume);
+                }
+#else
+                // For native builds, use the original method
                 shared_ptr<Mix_Chunk> pSound = WavResourceLoader::LoadAndReturnSound(pSoundInfo->soundToPlay.c_str());
                 assert(pSound != nullptr);
                 g_pApp->GetAudio()->PlaySound(pSound.get(), soundProperties);
+#endif
             }
         }
     }

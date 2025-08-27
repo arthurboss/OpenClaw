@@ -4,13 +4,16 @@ target_sources(openclaw
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Audio.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Audio.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/IAudioSystem.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioSystemFactory.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioSystemFactory.cpp
 )
 
 if (Emscripten)
     target_sources(openclaw
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/WebAudioAPI.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/WebAudioAPI.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/AudioWorkletSystem.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/AudioWorkletSystem.cpp
     )
 endif (Emscripten)
 
