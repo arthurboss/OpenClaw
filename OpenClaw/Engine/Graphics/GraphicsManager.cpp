@@ -80,6 +80,40 @@ std::string GraphicsManager::GetRendererName() const {
     return "None";
 }
 
+// Get detailed renderer status
+std::string GraphicsManager::GetRendererStatus() const {
+    std::string status = "Graphics System Status:\n";
+    status += "  Initialized: " + std::string(isInitialized ? "Yes" : "No") + "\n";
+    status += "  Renderer Type: ";
+    
+    switch (currentType) {
+        case RendererType::WebGPU:
+            status += "WebGPU (Modern, High Performance)";
+            break;
+        case RendererType::WebGL2:
+            status += "WebGL2 (Fallback, Good Performance)";
+            break;
+        case RendererType::WebGL1:
+            status += "WebGL1 (Legacy Fallback)";
+            break;
+        case RendererType::None:
+            status += "None (No Graphics Available)";
+            break;
+    }
+    
+    status += "\n  Renderer Name: " + GetRendererName() + "\n";
+    
+    if (renderer) {
+        status += "  WebGPU Support: " + std::string(SupportsFeature(RendererFeature::WebGPU) ? "Yes" : "No") + "\n";
+        status += "  WebGL2 Support: " + std::string(SupportsFeature(RendererFeature::WebGL2) ? "Yes" : "No") + "\n";
+        status += "  WebGL1 Support: " + std::string(SupportsFeature(RendererFeature::WebGL1) ? "Yes" : "No") + "\n";
+        status += "  Shader Support: " + std::string(SupportsFeature(RendererFeature::ShaderSupport) ? "Yes" : "No") + "\n";
+        status += "  Texture Compression: " + std::string(SupportsFeature(RendererFeature::TextureCompression) ? "Yes" : "No") + "\n";
+    }
+    
+    return status;
+}
+
 // Check feature support
 bool GraphicsManager::SupportsFeature(RendererFeature feature) const {
     if (renderer) {
@@ -122,19 +156,29 @@ bool GraphicsManager::TryInitializeWebGPU() {
     
     // Check if WebGPU is available via JavaScript
     int webgpuAvailable = EM_ASM_INT({
-        try {
-            return typeof navigator.gpu !== 'undefined' ? 1 : 0;
-        } catch (e) {
-            return 0;
-        }
+        return Module.detectWebGPU();
     });
     
     if (webgpuAvailable) {
         LOG("WebGPU detected, attempting to initialize renderer");
+        
+        // Get detailed WebGPU info from JavaScript
+        char* webgpuInfo = (char*)EM_ASM_PTR({
+            var info = Module.getWebGPUInfo();
+            var length = lengthBytesUTF8(info) + 1;
+            var buffer = _malloc(length);
+            stringToUTF8(info, buffer, length);
+            return buffer;
+        });
+        
+        LOG("WebGPU Info: " + std::string(webgpuInfo));
+        free(webgpuInfo);
+        
         try {
             renderer = std::make_unique<WebGPURenderer>();
             if (renderer->Initialize()) {
                 LOG("WebGPU renderer initialized successfully");
+                LOG("🎉 WebGPU is now active! Better performance expected.");
                 return true;
             } else {
                 LOG("WebGPU renderer initialization failed");
@@ -145,7 +189,7 @@ bool GraphicsManager::TryInitializeWebGPU() {
             renderer.reset();
         }
     } else {
-        LOG("WebGPU not available");
+        LOG("WebGPU not available in this browser");
     }
     
     return false;

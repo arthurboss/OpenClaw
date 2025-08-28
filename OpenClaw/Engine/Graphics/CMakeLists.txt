@@ -17,4 +17,5 @@ target_sources(openclaw
     ${CMAKE_CURRENT_SOURCE_DIR}/WebGPU/WebGPUShaders.h
     ${CMAKE_CURRENT_SOURCE_DIR}/GraphicsTest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/IntegrationTest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/WebGPUStatusTest.cpp
 )

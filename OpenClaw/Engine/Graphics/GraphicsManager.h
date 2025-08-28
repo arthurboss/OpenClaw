@@ -47,6 +47,11 @@ public:
     std::string GetRendererName() const;
     bool SupportsFeature(RendererFeature feature) const;
     
+    // Renderer status and information
+    std::string GetRendererStatus() const;
+    bool IsUsingWebGPU() const { return currentType == RendererType::WebGPU; }
+    bool IsUsingWebGL() const { return currentType == RendererType::WebGL2 || currentType == RendererType::WebGL1; }
+    
     // Performance queries
     float GetFrameTime() const { return frameTime; }
     int GetDrawCalls() const { return drawCalls; }

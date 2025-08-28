@@ -154,6 +154,30 @@ std::string GraphicsAdapter::GetRendererName() const {
     return "None";
 }
 
+// Check if using WebGPU
+bool GraphicsAdapter::IsUsingWebGPU() const {
+    if (m_graphicsManager) {
+        return m_graphicsManager->IsUsingWebGPU();
+    }
+    return false;
+}
+
+// Check if using WebGL
+bool GraphicsAdapter::IsUsingWebGL() const {
+    if (m_graphicsManager) {
+        return m_graphicsManager->IsUsingWebGL();
+    }
+    return false;
+}
+
+// Get detailed renderer status
+std::string GraphicsAdapter::GetRendererStatus() const {
+    if (m_graphicsManager) {
+        return m_graphicsManager->GetRendererStatus();
+    }
+    return "Graphics System: Not Initialized";
+}
+
 // Get frame time
 float GraphicsAdapter::GetFrameTime() const {
     if (m_graphicsManager) {

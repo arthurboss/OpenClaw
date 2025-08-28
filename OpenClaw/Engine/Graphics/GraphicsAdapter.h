@@ -43,6 +43,11 @@ public:
     GraphicsManager* GetGraphicsManager() { return m_graphicsManager.get(); }
     std::string GetRendererName() const;
     
+    // WebGPU status methods
+    bool IsUsingWebGPU() const;
+    bool IsUsingWebGL() const;
+    std::string GetRendererStatus() const;
+    
     // Performance queries
     float GetFrameTime() const;
     int GetDrawCalls() const;

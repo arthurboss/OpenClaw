@@ -182,13 +182,23 @@
         async detect() {
             try {
                 if ('gpu' in navigator) {
+                    console.log('WebGPU API detected in browser');
                     this.adapter = await navigator.gpu.requestAdapter();
                     if (this.adapter) {
+                        console.log('WebGPU adapter found:', this.adapter.name);
                         this.device = await this.adapter.requestDevice();
                         this.isAvailable = true;
+                        console.log('WebGPU device created successfully');
                         console.log('WebGPU available:', this.adapter.name);
+                        
+                        // Display WebGPU info in the page
+                        this.displayWebGPUInfo();
                         return true;
+                    } else {
+                        console.log('WebGPU adapter not available');
                     }
+                } else {
+                    console.log('WebGPU API not available in this browser');
                 }
             } catch (error) {
                 console.warn('WebGPU detection failed:', error);
@@ -203,6 +213,26 @@
                 adapterName: this.adapter ? this.adapter.name : 'None',
                 deviceName: this.device ? 'WebGPU Device' : 'None'
             };
+        },
+        
+        displayWebGPUInfo() {
+            // Create or update WebGPU info display
+            let infoDiv = document.getElementById('webgpu-info');
+            if (!infoDiv) {
+                infoDiv = document.createElement('div');
+                infoDiv.id = 'webgpu-info';
+                infoDiv.style.cssText = 'position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: #00ff00; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; z-index: 1000;';
+                document.body.appendChild(infoDiv);
+            }
+            
+            const info = this.getInfo();
+            infoDiv.innerHTML = `
+                <strong>WebGPU Status</strong><br>
+                Available: ${info.available ? '✅ Yes' : '❌ No'}<br>
+                Adapter: ${info.adapterName}<br>
+                Device: ${info.deviceName}<br>
+                <small>OpenClaw Graphics System</small>
+            `;
         }
     };
     
