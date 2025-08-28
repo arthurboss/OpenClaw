@@ -173,9 +173,45 @@
 <script type='text/javascript'>
     var loadingElement = document.getElementById("loading");
 
+    // WebGPU detection
+    var WebGPUDetector = {
+        isAvailable: false,
+        adapter: null,
+        device: null,
+        
+        async detect() {
+            try {
+                if ('gpu' in navigator) {
+                    this.adapter = await navigator.gpu.requestAdapter();
+                    if (this.adapter) {
+                        this.device = await this.adapter.requestDevice();
+                        this.isAvailable = true;
+                        console.log('WebGPU available:', this.adapter.name);
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.warn('WebGPU detection failed:', error);
+            }
+            console.log('WebGPU not available, falling back to WebGL');
+            return false;
+        },
+        
+        getInfo() {
+            return {
+                available: this.isAvailable,
+                adapterName: this.adapter ? this.adapter.name : 'None',
+                deviceName: this.device ? 'WebGPU Device' : 'None'
+            };
+        }
+    };
+    
     // Emscripten structure
     var Module = {
-        preRun: [function () {
+        preRun: [async function () {
+            // Detect WebGPU before loading the game
+            await WebGPUDetector.detect();
+            
             // Here you can change canvas size dynamically if it's needed
             // var ratio = window.devicePixelRatio || 1;
             // Module.canvas.width = Math.max(screen.width, screen.height) * ratio;
@@ -220,6 +256,16 @@
         // Could be removed. This code for debug build only
         print: Console.printToConsole,
         printErr: Console.printToConsole,
+        
+        // Expose WebGPU detection to C++
+        detectWebGPU: function() {
+            return WebGPUDetector.isAvailable ? 1 : 0;
+        },
+        
+        getWebGPUInfo: function() {
+            var info = WebGPUDetector.getInfo();
+            return JSON.stringify(info);
+        }
     };
 
     function loadGame() {
