@@ -47,7 +47,7 @@ void TestGraphicsSystem() {
     menuItemData.height = 50.0f;
     menuItemData.alpha = 1.0f;
     menuItemData.visible = true;
-    menuItemData.state = MenuItemState::Active;
+    menuItemData.state = GraphicsMenuItemState::Active;
     menuItemData.canBeFocused = true;
     
     MenuTextData textData;

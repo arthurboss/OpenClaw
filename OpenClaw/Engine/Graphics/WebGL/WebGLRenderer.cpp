@@ -9,6 +9,7 @@ WebGLRenderer::WebGLRenderer()
     : sdlRenderer(nullptr)
     , defaultFont(nullptr)
     , isInitialized(false)
+    , ownsRenderer(false)
     , frameTime(0.0f)
     , drawCalls(0)
     , frameStartTime(0)
@@ -39,6 +40,26 @@ bool WebGLRenderer::Initialize() {
         return false;
     }
     
+    ownsRenderer = true; // We created the renderer
+    return InitializeRenderer();
+}
+
+// Initialize WebGL renderer with existing SDL renderer
+bool WebGLRenderer::Initialize(SDL_Renderer* existingRenderer) {
+    LOG("Initializing WebGL Renderer with existing SDL renderer...");
+    
+    if (!existingRenderer) {
+        LOG_ERROR("No existing SDL renderer provided");
+        return false;
+    }
+    
+    sdlRenderer = existingRenderer;
+    ownsRenderer = false; // We don't own the renderer
+    return InitializeRenderer();
+}
+
+// Common initialization logic
+bool WebGLRenderer::InitializeRenderer() {
     // Set renderer properties
     SDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_BLEND);
     
@@ -78,8 +99,11 @@ void WebGLRenderer::Shutdown() {
         defaultFont = nullptr;
     }
     
-    if (sdlRenderer) {
+    if (sdlRenderer && ownsRenderer) {
         SDL_DestroyRenderer(sdlRenderer);
+        sdlRenderer = nullptr;
+    } else if (sdlRenderer) {
+        // We don't own the renderer, just clear our reference
         sdlRenderer = nullptr;
     }
     
@@ -126,8 +150,8 @@ void WebGLRenderer::RenderMenuItem(const MenuItemData& data) {
     if (!isInitialized || !data.visible) return;
     
     // Choose texture based on state
-    std::string texturePath = (data.state == MenuItemState::Active) ? 
-        data.activeTexturePath : data.inactiveTexturePath;
+        std::string texturePath = (data.state == GraphicsMenuItemState::Active) ? 
+                              data.activeTexturePath : data.inactiveTexturePath;
     
     RenderTexture(texturePath, data.x, data.y, data.width, data.height, data.alpha);
     drawCalls++;
@@ -303,7 +327,8 @@ SDL_Texture* WebGLRenderer::CreateTextTexture(const std::string& text, const Men
     TTF_SetFontStyle(defaultFont, style);
     
     // Set font size
-    TTF_SetFontSize(defaultFont, static_cast<int>(textData.fontSize));
+    // TTF_SetFontSize is not available in older SDL_ttf versions, we'll use the font as is
+    // In a real implementation, you'd need to load the font at the correct size
     
     // Render text surface
     SDL_Surface* surface = TTF_RenderText_Blended(defaultFont, text.c_str(), color);
@@ -317,7 +342,7 @@ SDL_Texture* WebGLRenderer::CreateTextTexture(const std::string& text, const Men
     SDL_FreeSurface(surface);
     
     if (!texture) {
-        LOG_ERROR("Failed to create text texture: " + SDL_GetError());
+        LOG_ERROR(std::string("Failed to create text texture: ") + SDL_GetError());
         return nullptr;
     }
     

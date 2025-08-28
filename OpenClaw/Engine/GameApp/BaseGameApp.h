@@ -9,6 +9,7 @@
 #include "../UserInterface/Console.h"
 #include "CommandHandler.h"
 #include "../UserInterface/Touch/TouchManager.h"
+#include "../Graphics/GraphicsAdapter.h"
 
 const int DEFAULT_SCREEN_WIDTH = 1280;
 const int DEFAULT_SCREEN_HEIGHT = 768;
@@ -287,6 +288,11 @@ public:
 
     Audio* GetAudio() const { return m_pAudio; }
 
+    // Graphics system access
+    GraphicsAdapter* GetGraphicsAdapter() { return m_graphicsAdapter.get(); }
+    bool InitializeGraphicsSystem();
+    void ShutdownGraphicsSystem();
+
     bool LoadGameOptions(const char* inConfigFile = "config.xml");
     void SaveGameOptions(const char* outConfigFile = "config.xml");
 
@@ -315,6 +321,9 @@ protected:
     TTF_Font* m_pConsoleFont;
     Audio* m_pAudio;
     TouchManager *m_pTouchManager;
+
+    // Graphics system
+    std::unique_ptr<GraphicsAdapter> m_graphicsAdapter;
 
     LocalizedStringsMap m_LocalizedStringsMap;
     FontMap m_FontMap;

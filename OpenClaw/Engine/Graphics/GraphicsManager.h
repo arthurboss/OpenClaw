@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IRenderer.h"
+#include <SDL2/SDL.h>
 #include <memory>
 #include <string>
 
@@ -22,6 +23,7 @@ private:
     std::unique_ptr<IRenderer> renderer;
     RendererType currentType;
     bool isInitialized;
+    SDL_Renderer* existingSdlRenderer; // Store existing SDL renderer for WebGL fallback
     
     // Performance tracking
     float frameTime;
@@ -35,6 +37,7 @@ public:
     
     // Initialization and shutdown
     bool Initialize();
+    bool Initialize(SDL_Renderer* existingRenderer); // Overload to use existing renderer
     void Shutdown();
     
     // Renderer access
@@ -63,6 +66,7 @@ public:
     
 private:
     // Renderer detection
+    bool InitializeInternal(SDL_Renderer* existingRenderer); // Common initialization logic
     bool TryInitializeWebGPU();
     bool TryInitializeWebGL2();
     bool TryInitializeWebGL1();

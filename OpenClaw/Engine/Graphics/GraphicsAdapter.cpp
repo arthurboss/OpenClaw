@@ -1,5 +1,6 @@
 #include "GraphicsAdapter.h"
 #include "../Logger/Logger.h"
+#include "../UserInterface/UserInterface.h"
 #include <SDL2/SDL.h>
 
 // Constructor
@@ -17,7 +18,7 @@ GraphicsAdapter::~GraphicsAdapter() {
 bool GraphicsAdapter::Initialize() {
     LOG("Initializing GraphicsAdapter...");
     
-    m_graphicsManager = std::make_unique<GraphicsManager>();
+    m_graphicsManager.reset(new GraphicsManager());
     if (!m_graphicsManager->Initialize()) {
         LOG_ERROR("Failed to initialize GraphicsManager");
         return false;
@@ -25,6 +26,23 @@ bool GraphicsAdapter::Initialize() {
     
     m_isInitialized = true;
     LOG("GraphicsAdapter initialized successfully");
+    LOG("Active renderer: " + m_graphicsManager->GetRendererName());
+    
+    return true;
+}
+
+// Initialize graphics adapter with existing SDL renderer
+bool GraphicsAdapter::Initialize(SDL_Renderer* existingRenderer) {
+    LOG("Initializing GraphicsAdapter with existing SDL renderer...");
+    
+    m_graphicsManager.reset(new GraphicsManager());
+    if (!m_graphicsManager->Initialize(existingRenderer)) {
+        LOG_ERROR("Failed to initialize GraphicsManager with existing renderer");
+        return false;
+    }
+    
+    m_isInitialized = true;
+    LOG("GraphicsAdapter initialized successfully with existing renderer");
     LOG("Active renderer: " + m_graphicsManager->GetRendererName());
     
     return true;
@@ -131,18 +149,18 @@ void GraphicsAdapter::RenderText(const std::string& text, const Point& position,
     renderer->RenderMenuText(textData);
 }
 
-// Convert old MenuItemState to new MenuItemState
-MenuItemState GraphicsAdapter::ConvertMenuItemState(::MenuItemState oldState) {
+// Convert old MenuItemState to new GraphicsMenuItemState
+GraphicsMenuItemState GraphicsAdapter::ConvertMenuItemState(::MenuItemState oldState) {
     switch (oldState) {
         case MenuItemState_Disabled:
-            return MenuItemState::Inactive;
+            return GraphicsMenuItemState::Inactive;
         case MenuItemState_Inactive:
-            return MenuItemState::Inactive;
+            return GraphicsMenuItemState::Inactive;
         case MenuItemState_Active:
-            return MenuItemState::Active;
+            return GraphicsMenuItemState::Active;
         case MenuItemState_None:
         default:
-            return MenuItemState::Inactive;
+            return GraphicsMenuItemState::Inactive;
     }
 }
 

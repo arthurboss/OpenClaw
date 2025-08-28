@@ -11,6 +11,7 @@
 GraphicsManager::GraphicsManager()
     : currentType(RendererType::None)
     , isInitialized(false)
+    , existingSdlRenderer(nullptr)
     , frameTime(0.0f)
     , drawCalls(0)
 {
@@ -27,28 +28,43 @@ GraphicsManager::~GraphicsManager() {
 bool GraphicsManager::Initialize() {
     LOG("=== GraphicsManager::Initialize() called ===");
     
-    // Try WebGPU first (priority)
+    return InitializeInternal(nullptr);
+}
+
+// Initialize with existing SDL renderer
+bool GraphicsManager::Initialize(SDL_Renderer* existingRenderer) {
+    LOG("=== GraphicsManager::Initialize() called with existing renderer ===");
+    
+    return InitializeInternal(existingRenderer);
+}
+
+// Common initialization logic
+bool GraphicsManager::InitializeInternal(SDL_Renderer* existingRenderer) {
+    if (isInitialized) {
+        LOG_WARNING("GraphicsManager already initialized");
+        return true;
+    }
+    
+    // Store the existing renderer for WebGL fallback
+    existingSdlRenderer = existingRenderer;
+    
+    // Try to initialize renderers in order of preference
     if (TryInitializeWebGPU()) {
         currentType = RendererType::WebGPU;
-        LOG("WebGPU renderer initialized successfully");
         isInitialized = true;
         LogRendererInfo();
         return true;
     }
     
-    // Fallback to WebGL2
     if (TryInitializeWebGL2()) {
         currentType = RendererType::WebGL2;
-        LOG("WebGL2 renderer initialized (fallback)");
         isInitialized = true;
         LogRendererInfo();
         return true;
     }
     
-    // Final fallback to WebGL1
     if (TryInitializeWebGL1()) {
         currentType = RendererType::WebGL1;
-        LOG("WebGL1 renderer initialized (fallback)");
         isInitialized = true;
         LogRendererInfo();
         return true;
@@ -175,7 +191,7 @@ bool GraphicsManager::TryInitializeWebGPU() {
         free(webgpuInfo);
         
         try {
-            renderer = std::make_unique<WebGPURenderer>();
+            renderer.reset(new WebGPURenderer());
             if (renderer->Initialize()) {
                 LOG("WebGPU renderer initialized successfully");
                 LOG("🎉 WebGPU is now active! Better performance expected.");
@@ -213,17 +229,27 @@ bool GraphicsManager::TryInitializeWebGL2() {
     if (webgl2Available) {
         LOG("WebGL2 detected, attempting to initialize renderer");
         try {
-            renderer = std::make_unique<WebGLRenderer>();
-            if (renderer->Initialize()) {
+            WebGLRenderer* webglRenderer = new WebGLRenderer();
+            bool initSuccess = false;
+            
+            if (existingSdlRenderer) {
+                LOG("Using existing SDL renderer for WebGL2");
+                initSuccess = webglRenderer->Initialize(existingSdlRenderer);
+            } else {
+                LOG("Creating new SDL renderer for WebGL2");
+                initSuccess = webglRenderer->Initialize();
+            }
+            
+            if (initSuccess) {
+                renderer.reset(webglRenderer);
                 LOG("WebGL2 renderer initialized successfully");
                 return true;
             } else {
                 LOG("WebGL2 renderer initialization failed");
-                renderer.reset();
+                delete webglRenderer;
             }
         } catch (const std::exception& e) {
             LOG_ERROR("Exception during WebGL2 initialization: " + std::string(e.what()));
-            renderer.reset();
         }
     } else {
         LOG("WebGL2 not available");
@@ -250,17 +276,27 @@ bool GraphicsManager::TryInitializeWebGL1() {
     if (webgl1Available) {
         LOG("WebGL1 detected, attempting to initialize renderer");
         try {
-            renderer = std::make_unique<WebGLRenderer>();
-            if (renderer->Initialize()) {
+            WebGLRenderer* webglRenderer = new WebGLRenderer();
+            bool initSuccess = false;
+            
+            if (existingSdlRenderer) {
+                LOG("Using existing SDL renderer for WebGL1");
+                initSuccess = webglRenderer->Initialize(existingSdlRenderer);
+            } else {
+                LOG("Creating new SDL renderer for WebGL1");
+                initSuccess = webglRenderer->Initialize();
+            }
+            
+            if (initSuccess) {
+                renderer.reset(webglRenderer);
                 LOG("WebGL1 renderer initialized successfully");
                 return true;
             } else {
                 LOG("WebGL1 renderer initialization failed");
-                renderer.reset();
+                delete webglRenderer;
             }
         } catch (const std::exception& e) {
             LOG_ERROR("Exception during WebGL1 initialization: " + std::string(e.what()));
-            renderer.reset();
         }
     } else {
         LOG("WebGL1 not available");

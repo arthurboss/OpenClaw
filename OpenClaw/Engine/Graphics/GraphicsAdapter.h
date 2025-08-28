@@ -4,6 +4,7 @@
 #include "Data/MenuBackgroundData.h"
 #include "Data/MenuItemData.h"
 #include "Data/MenuTextData.h"
+#include "../UserInterface/UserInterface.h"
 #include <SDL2/SDL.h>
 #include <memory>
 
@@ -20,8 +21,9 @@ public:
     GraphicsAdapter();
     ~GraphicsAdapter();
     
-    // Initialization
+    // Initialize/shutdown
     bool Initialize();
+    bool Initialize(SDL_Renderer* existingRenderer); // Overload to use existing renderer
     void Shutdown();
     
     // Direct rendering methods (for integration with existing system)
@@ -55,5 +57,5 @@ public:
     
 private:
     // Helper methods
-    MenuItemState ConvertMenuItemState(::MenuItemState oldState);
+    GraphicsMenuItemState ConvertMenuItemState(::MenuItemState oldState);
 };

@@ -7,6 +7,7 @@
 #include "../UserInterface/HumanView.h"
 #include "../Resource/ResourceMgr.h"
 #include "../Graphics2D/Image.h"
+#include "../Graphics/GraphicsAdapter.h"
 
 // Resource loaders
 #include "../Resource/Loaders/DefaultLoader.h"
@@ -66,6 +67,7 @@ bool BaseGameApp::Initialize(int argc, char** argv)
     if (!InitializeResources(m_GameOptions)) return false;
     if (!InitializeLocalization(m_GameOptions)) return false;
     if (!InitializeTouchManager(m_GameOptions)) return false;
+    if (!InitializeGraphicsSystem()) return false;
     if (!ReadActorXmlPrototypes(m_GameOptions)) return false;
     if (!ReadLevelMetadata(m_GameOptions)) return false;
 
@@ -100,6 +102,9 @@ void BaseGameApp::Terminate()
     LOG("Terminating...");
 
     RemoveAllDelegates();
+
+    // Shutdown graphics system
+    ShutdownGraphicsSystem();
 
     SAFE_DELETE(m_pGame);
     SDL_DestroyRenderer(m_pRenderer);
@@ -1538,4 +1543,42 @@ void BaseGameApp::RegisterTouchRecognizers(ITouchHandler &touchHandler) {
 
 std::shared_ptr<ResourceCache> BaseGameApp::GetResourceCache() const {
     return m_pResourceMgr->VGetResourceCacheFromName(ORIGINAL_RESOURCE);
+}
+
+// Graphics system implementation
+bool BaseGameApp::InitializeGraphicsSystem() {
+    LOG("Initializing graphics system...");
+    
+    m_graphicsAdapter.reset(new GraphicsAdapter());
+    if (!m_graphicsAdapter->Initialize(m_pRenderer)) {
+        LOG_WARNING("Failed to initialize new graphics system, falling back to SDL2");
+        return false;
+    }
+    
+    LOG("Graphics system initialized successfully");
+    LOG("Active renderer: " + m_graphicsAdapter->GetRendererName());
+    
+    // Log detailed status
+    std::string rendererStatus = m_graphicsAdapter->GetRendererStatus();
+    LOG(rendererStatus);
+    
+    // Check WebGPU status
+    if (m_graphicsAdapter->IsUsingWebGPU()) {
+        LOG("🎉 WebGPU is active! Better performance expected.");
+    } else if (m_graphicsAdapter->IsUsingWebGL()) {
+        LOG("📱 Using WebGL fallback - Good compatibility");
+    } else {
+        LOG("⚠️  No graphics system available");
+    }
+    
+    return true;
+}
+
+void BaseGameApp::ShutdownGraphicsSystem() {
+    if (m_graphicsAdapter) {
+        LOG("Shutting down graphics system...");
+        m_graphicsAdapter->Shutdown();
+        m_graphicsAdapter.reset();
+        LOG("Graphics system shutdown complete");
+    }
 }

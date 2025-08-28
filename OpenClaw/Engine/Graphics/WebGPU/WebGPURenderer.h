@@ -1,92 +1,45 @@
-#pragma once
+#ifndef __WEBGPU_RENDERER_H__
+#define __WEBGPU_RENDERER_H__
 
 #include "../IRenderer.h"
 #include "../Data/MenuBackgroundData.h"
 #include "../Data/MenuItemData.h"
 #include "../Data/MenuTextData.h"
-#include <webgpu/webgpu.h>
-#include <map>
 #include <string>
-#include <vector>
 
-// WebGPU renderer implementation
-class WebGPURenderer : public IRenderer {
-private:
-    // WebGPU objects
-    WGPUInstance instance;
-    WGPUAdapter adapter;
-    WGPUDevice device;
-    WGPUQueue queue;
-    WGPUSwapChain swapChain;
-    WGPURenderPipeline renderPipeline;
-    
-    // Surface and configuration
-    WGPUSurface surface;
-    WGPUSurfaceConfiguration surfaceConfig;
-    int surfaceWidth, surfaceHeight;
-    
-    // State
-    bool isInitialized;
-    
-    // Performance tracking
-    float frameTime;
-    int drawCalls;
-    uint32_t frameStartTime;
-    
-    // Viewport
-    int viewportX, viewportY, viewportWidth, viewportHeight;
-    
-    // Texture cache
-    std::map<std::string, WGPUTextureView> textureCache;
-    
-    // Shader modules
-    WGPUShaderModule vertexShader;
-    WGPUShaderModule fragmentShader;
-    
+class WebGPURenderer : public IRenderer
+{
 public:
-    // Constructor/Destructor
     WebGPURenderer();
-    ~WebGPURenderer();
+    virtual ~WebGPURenderer();
+
+    // IRenderer interface implementation
+    virtual bool Initialize() override;
+    virtual void Shutdown() override;
+    virtual void BeginFrame() override;
+    virtual void EndFrame() override;
+    virtual void Clear(float r, float g, float b, float a) override;
+    virtual void Present() override;
+    virtual void SetViewport(int x, int y, int width, int height) override;
     
-    // Core rendering operations
-    bool Initialize() override;
-    void Shutdown() override;
-    void BeginFrame() override;
-    void EndFrame() override;
+    // Menu rendering
+    virtual void RenderMenuBackground(const MenuBackgroundData& data) override;
+    virtual void RenderMenuItem(const MenuItemData& data) override;
+    virtual void RenderMenuText(const MenuTextData& data) override;
     
-    // Menu-specific rendering
-    void RenderMenuBackground(const MenuBackgroundData& data) override;
-    void RenderMenuItem(const MenuItemData& data) override;
-    void RenderMenuText(const MenuTextData& data) override;
-    
-    // Common operations
-    void SetViewport(int x, int y, int width, int height) override;
-    void Clear(float r, float g, float b, float a) override;
-    void Present() override;
-    
-    // Capability queries
-    bool SupportsFeature(RendererFeature feature) override;
-    std::string GetRendererName() const override;
+    // Status queries
+    virtual std::string GetRendererName() const override;
+    virtual bool SupportsFeature(RendererFeature feature) override;
     
     // Performance queries
-    float GetFrameTime() const override { return frameTime; }
-    int GetDrawCalls() const override { return drawCalls; }
-    void ResetStats() override;
-    
+    virtual float GetFrameTime() const override;
+    virtual int GetDrawCalls() const override;
+    virtual void ResetStats() override;
+
 private:
-    // Helper methods
-    void ResetPerformanceStats();
-    bool InitializeWebGPU();
-    bool CreateSwapChain();
-    bool CreateRenderPipeline();
-    bool CreateShaders();
-    WGPUTextureView LoadTexture(const std::string& path);
-    void RenderTexture(WGPUTextureView texture, float x, float y, float width, float height, float alpha);
-    void RenderTexture(const std::string& texturePath, float x, float y, float width, float height, float alpha);
-    void ClearTextureCache();
-    WGPUTextureView CreateTextTexture(const std::string& text, const MenuTextData& textData);
-    
-    // WebGPU callbacks
-    static void OnDeviceLost(WGPUDeviceLostReason reason, const char* message, void* userdata);
-    static void OnError(WGPUErrorType type, const char* message, void* userdata);
+    bool m_isInitialized;
+    int m_frameCount;
+    float m_lastFrameTime;
 };
+
+#endif // __WEBGPU_RENDERER_H__

@@ -15,6 +15,7 @@ private:
     SDL_Renderer* sdlRenderer;
     TTF_Font* defaultFont;
     bool isInitialized;
+    bool ownsRenderer; // Track if we created the renderer or it was provided externally
     
     // Performance tracking
     float frameTime;
@@ -34,6 +35,7 @@ public:
     
     // Core rendering operations
     bool Initialize() override;
+    bool Initialize(SDL_Renderer* existingRenderer); // New overload to use existing renderer
     void Shutdown() override;
     void BeginFrame() override;
     void EndFrame() override;
@@ -59,6 +61,7 @@ public:
     
 private:
     // Helper methods
+    bool InitializeRenderer(); // Common initialization logic
     void ResetPerformanceStats();
     SDL_Texture* LoadTexture(const std::string& path);
     void RenderTexture(SDL_Texture* texture, float x, float y, float width, float height, float alpha);
